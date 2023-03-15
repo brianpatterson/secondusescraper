@@ -1,51 +1,58 @@
-import creds from './creds.js'
-
-const puppeteer = require('puppeteer')
+const { creds } = require('./creds.js');
+const fetch = require('node-fetch');
 const nodemailer = require('nodemailer');
 const fs = require('fs');
-const buffer = new Buffer.alloc(1024);
+const cheerio = require('cheerio');
 
+const TIMESTAMP_FILE = './seconduseTimestamp.txt';
 
 const transporter = nodemailer.createTransport({
     service: "gmail",
     auth: {
-      user: creds.user,
-      pass: creds.pass,
+        user: creds.user,
+        pass: creds.pass,
     },
 });
 
-const buildEmailObject = (newTimestamp) => { 
+const buildEmailObject = (newTimestamp) => {
     return {
         from: `"Second Use Mailer" <${creds.user}>`, // sender address
         to: creds.recipientEmail, // list of receivers
-        subject: "New Stuff!", // Subject line
+        subject: "There is new inventory at Second Use", // Subject line
         text: `Second Use ${newTimestamp} https://www.seconduse.com/inventory/`, // plain text body
         html: `<b>Second Use ${newTimestamp} https://www.seconduse.com/inventory/</b>`, // html body
-    }
+    };
+};
+
+async function sendUpdateEmail(newTimestamp) {
+    transporter.sendMail(buildEmailObject(newTimestamp)).then(info => {
+        console.log({ info });
+    }).catch(console.error);
 }
 
-async function compareTimestamps(newTimestamp) {
-    let oldTimestamp =  fs.readFileSync('./seconduseTimestamp.txt', {encoding:'utf8', flag:'r'})
-
-    if (oldTimestamp !== newTimestamp) {
-        transporter.sendMail(buildEmailObject(newTimestamp)).then(info => {
-            console.log({info});
-        }).catch(console.error)
-        fs.writeFileSync('./seconduseTimestamp.txt', newTimestamp)
-        console.log("Updated timestamp")
-    } else {
-        console.log("No new updates")
+async function getOldTimestamp(newTimestamp) {
+    if (!fs.existsSync(TIMESTAMP_FILE)) {
+        return '';
     }
+    return fs.readFileSync(TIMESTAMP_FILE, { encoding: 'utf8', flag: 'r' });
 }
- 
+
+async function writeTimestamp(newTimestamp) {
+    fs.writeFileSync(TIMESTAMP_FILE, newTimestamp);
+}
+
 async function scrape() {
-    const browser = await puppeteer.launch({})
-    const page = await browser.newPage()
-
-    await page.goto('https://www.seconduse.com/inventory/')
-    const element = await page.waitForSelector(".timestamp > p")
-    const timestamp = await page.evaluate(element => element.textContent, element)
-    const isUpdated = compareTimestamps(timestamp)
-    browser.close()
+    const response = await fetch('https://www.seconduse.com/inventory/');
+    const body = await response.text();
+    const $ = cheerio.load(body);
+    const newTimestamp = $('.timestamp > p').text();
+    const oldTimestamp = await getOldTimestamp();
+    if (newTimestamp === oldTimestamp) {
+        console.log("No new updates");
+        return;
+    }
+    sendUpdateEmail(newTimestamp);
+    writeTimestamp(newTimestamp);
+    console.log("Updated timestamp");
 }
-scrape()
+scrape();

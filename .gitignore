@@ -1,2 +1,3 @@
 node_modules
-./seconduseTimestamp.txt
+creds.js
+seconduseTimestamp.txt

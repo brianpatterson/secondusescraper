@@ -9,7 +9,8 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "nodemailer": "^6.7.2",
-    "puppeteer": "^13.4.0"
+    "cheerio": "^1.0.0-rc.12",
+    "node-fetch": "^2.6.9",
+    "nodemailer": "^6.7.2"
   }
 }
