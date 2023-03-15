@@ -1,23 +1,26 @@
+import creds from './creds.js'
+
 const puppeteer = require('puppeteer')
 const nodemailer = require('nodemailer');
-const fs = require('fs')
-const buffer = new Buffer.alloc(1024)
+const fs = require('fs');
+const buffer = new Buffer.alloc(1024);
+
 
 const transporter = nodemailer.createTransport({
     service: "gmail",
     auth: {
-      user: 'secondusetimestampmailer@gmail.com',
-      pass: 'secondusetimestamp',
+      user: creds.user,
+      pass: creds.pass,
     },
 });
 
 const buildEmailObject = (newTimestamp) => { 
     return {
-        from: '"Second Use Mailer" <secondusetimestampmailer@gmail.com>', // sender address
-        to: "torilovesbrian@gmail.com", // list of receivers
+        from: `"Second Use Mailer" <${creds.user}>`, // sender address
+        to: creds.recipientEmail, // list of receivers
         subject: "New Stuff!", // Subject line
-        text: `Second Use ${newTimestamp}`, // plain text body
-        html: `<b>Second Use ${newTimestamp}</b>`, // html body
+        text: `Second Use ${newTimestamp} https://www.seconduse.com/inventory/`, // plain text body
+        html: `<b>Second Use ${newTimestamp} https://www.seconduse.com/inventory/</b>`, // html body
     }
 }
 
